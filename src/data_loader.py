@@ -1,16 +1,3 @@
-# import pandas as pd
-
-# def load_data(filepath: str) -> pd.DataFrame:
-#     """Load dataset from a given file path."""
-#     try:
-#         df = pd.read_csv(filepath)
-#         print(f"✅ Loaded data with shape: {df.shape}")
-#         return df
-#     except Exception as e:
-#         print(f"❌ Failed to load data: {e}")
-#         raise
-
-
 import pandas as pd
 
 def load_data(filepath: str) -> pd.DataFrame:
