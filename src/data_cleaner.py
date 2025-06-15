@@ -34,3 +34,13 @@ def fill_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     print(f"🧹 Rows removed during cleaning: {original_shape[0] - new_shape[0]}")
     
     return df
+def remove_invalid_premiums(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove records with TotalPremium <= 0.
+    These distort financial metrics like loss ratio and margin.
+    """
+    original = df.shape[0]
+    df = df[df['TotalPremium'] > 0]
+    removed = original - df.shape[0]
+    print(f"🧹 Removed {removed} rows with TotalPremium <= 0")
+    return df
