@@ -52,27 +52,89 @@ def plot_claims_over_time(df: pd.DataFrame):
     plt.show()
 
 def plot_top_and_bottom_models_by_claims(df: pd.DataFrame):
-    """Plot top and bottom models by claims."""
+    """Plot top and bottom vehicle models by average claims."""
+
     top = top_models_by_claims(df)
     bottom = bottom_models_by_claims(df)
 
-    print("Top Claiming Models:")
-    sns.barplot(x="Model", y="TotalClaims", data=top)
-    plt.figure(figsize=(12, 6))
-    plt.xticks(rotation=45)
-    plt.title("Top Claiming Models")
-    plt.tight_layout()
-    plt.show()
-    print(" Top Claiming Models:")
+    # Top models
+    print("🚗 Top Claiming Models:")
     print(top)
 
-    print("\nLowest Claiming Models:")
-    sns.barplot(x="Model", y="TotalClaims", data=bottom)
     plt.figure(figsize=(12, 6))
+    sns.barplot(x="Model", y="TotalClaims", data=top, palette="Reds_r")
     plt.xticks(rotation=45)
-    plt.title("Lowest Claiming Models*")
+    plt.title("Top Claiming Vehicle Models")
     plt.tight_layout()
     plt.show()
-    print("\n Lowest Claiming Models:")
+
+    # Bottom models
+    print("\n🚙 Lowest Claiming Models:")
     print(bottom)
 
+    plt.figure(figsize=(12, 6))
+    sns.barplot(x="Model", y="TotalClaims", data=bottom, palette="Blues")
+    plt.xticks(rotation=45)
+    plt.title("Lowest Claiming Vehicle Models")
+    plt.tight_layout()
+    plt.show()
+
+def plot_top_loss_ratios(loss_df: pd.DataFrame, top_n=10):
+    """
+    Plot top N province-vehicle-gender combinations by average loss ratio.
+    """
+    top = loss_df.sort_values('LossRatio', ascending=False).head(top_n)
+
+    # Combine fields for clean Y-labels
+    top['Group'] = top.apply(lambda row: f"{row['Province']} - {row['VehicleType']} - {row['Gender']}", axis=1)
+
+    plt.figure(figsize=(12, 6))
+    sns.barplot(data=top, x="LossRatio", y="Group", palette="coolwarm")
+    plt.xlabel("Average Loss Ratio")
+    plt.ylabel("Group (Province - VehicleType - Gender)")
+    plt.title(f"Top {top_n} Groups by Loss Ratio")
+    plt.tight_layout()
+    plt.show()
+# def correlation_heatmap(df: pd.DataFrame):
+#     """
+#     Plot a heatmap of correlations between numeric columns.
+#     """
+#     plt.figure(figsize=(12, 8))
+#     numeric_df = df.select_dtypes(include=['float64', 'int64'])
+#     corr = numeric_df.corr()
+
+#     sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", linewidths=0.5)
+#     plt.title("Correlation Heatmap of Numerical Features")
+#     plt.tight_layout()
+#     plt.show()
+
+def correlation_heatmap(df: pd.DataFrame):
+    """
+    Plot a heatmap of correlations between selected important numeric features.
+    """
+    important_numeric_cols = [
+        "TotalPremium",
+        "TotalClaims",
+        "SumInsured",
+        "CustomValueEstimate",
+        "CalculatedPremiumPerTerm"
+    ]
+
+    numeric_df = df[important_numeric_cols].copy()
+    numeric_df = numeric_df.dropna(how="all")  # drop rows with all NaNs
+
+    if numeric_df.empty or numeric_df.shape[1] < 2:
+        print("⚠️ Not enough valid numeric data to compute correlations.")
+        return
+
+    corr = numeric_df.corr()
+
+    if corr.isnull().all().all():
+        print("⚠️ Correlation matrix is empty or NaN.")
+        return
+
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", linewidths=0.5)
+    plt.title("Correlation Heatmap of Key Financial Features")
+    plt.tight_layout()
+    plt.show()
