@@ -1,7 +1,6 @@
 import pandas as pd
 from scipy import stats
-import numpy as np
-
+from scipy.stats import chi2_contingency
 # ----------------------------------
 # 🧮 Metric Calculations
 # ----------------------------------
@@ -35,7 +34,9 @@ def run_ttest(group_a: pd.Series, group_b: pd.Series) -> dict:
     return {
         "t_statistic": t_stat,
         "p_value": p_value,
-        "reject_null": p_value < 0.05
+        "reject_null": p_value < 0.05,
+        "n_A": len(group_a),
+        "n_B": len(group_b)
     }
 
 # ----------------------------------
@@ -129,3 +130,73 @@ def test_zipcode_risk_difference(df: pd.DataFrame) -> dict:
     result["group_B"] = str(top_zips[1])
 
     return result
+
+
+# ----------------------
+# ANOVA: Province vs Severity
+# ----------------------
+def province_claim_severity_anova(df: pd.DataFrame) -> dict:
+    """
+    H₀: No difference in claim severity across all provinces.
+    """
+    df = df[df["TotalClaims"] > 0].copy()
+    df = df[df["Province"].notna()]
+
+    grouped = [group["TotalClaims"].dropna() for _, group in df.groupby("Province")]
+    f_stat, p_value = stats.f_oneway(*grouped)
+
+    return {
+        "test": "ANOVA: Province vs Claim Severity",
+        "p_value": p_value,
+        "reject_null": p_value < 0.05,
+        "num_groups": len(grouped)
+    }
+
+
+# ----------------------
+# ANOVA: Zip Code vs Margin
+# ----------------------
+def zipcode_margin_anova(df: pd.DataFrame) -> dict:
+    """
+    H₀: No difference in margin across all zip codes.
+    """
+    df = df.copy()
+    df["Margin"] = df["TotalPremium"] - df["TotalClaims"]
+    df = df[df["PostalCode"].notna()]
+
+    top_zipcodes = df["PostalCode"].value_counts().nlargest(10).index
+    df = df[df["PostalCode"].isin(top_zipcodes)]
+
+    grouped = [group["Margin"].dropna() for _, group in df.groupby("PostalCode")]
+    f_stat, p_value = stats.f_oneway(*grouped)
+
+    return {
+        "test": "ANOVA: Zip Code vs Margin",
+        "p_value": p_value,
+        "reject_null": p_value < 0.05,
+        "num_groups": len(grouped)
+    }
+
+
+# ----------------------
+# Chi-Square: Zip Code vs ClaimMade
+# ----------------------
+def zipcode_claim_frequency_chisq(df: pd.DataFrame) -> dict:
+    """
+    H₀: No difference in claim frequency across zip codes.
+    """
+    df = df.copy()
+    df["ClaimMade"] = (df["TotalClaims"] > 0).astype(int)
+
+    top_zipcodes = df["PostalCode"].value_counts().nlargest(10).index
+    df = df[df["PostalCode"].isin(top_zipcodes)]
+
+    contingency = pd.crosstab(df["PostalCode"], df["ClaimMade"])
+    chi2, p_value, dof, expected = chi2_contingency(contingency)
+
+    return {
+        "test": "Chi-square: Zip Code vs Claim Frequency",
+        "p_value": p_value,
+        "reject_null": p_value < 0.05,
+        "num_groups": contingency.shape[0]
+    }
