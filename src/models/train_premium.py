@@ -1,31 +1,28 @@
-from src.services.model_inputs import get_claim_severity_data
+from sklearn.metrics import root_mean_squared_error, r2_score
+from src.services.model_inputs import get_premium_prediction_data
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
-from sklearn.metrics import r2_score, root_mean_squared_error
-from sklearn.tree import DecisionTreeRegressor
 
-def train_and_evaluate_claim_severity_models(df):
+def train_and_evaluate_premium_models(df):
     """
-    Train Linear, Tree, RF, and XGBoost models to predict TotalClaims on rows where claim > 0.
+    Train regression models to predict CalculatedPremiumPerTerm.
     Prints RMSE and R² for each model.
-    Returns a dict of fitted pipelines.
+    Returns a dictionary of fitted pipelines for interpretation.
     """
-    # Load and prepare data
-    X_train, X_test, y_train, y_test, preprocessor = get_claim_severity_data(df)
+    X_train, X_test, y_train, y_test, preprocessor = get_premium_prediction_data(df)
 
-    # Define models
     models = {
         "Linear Regression": LinearRegression(),
         "Decision Tree": DecisionTreeRegressor(random_state=42),
-        "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
-        "XGBoost": XGBRegressor(n_estimators=100, random_state=42)
+        "Random Forest": RandomForestRegressor(n_estimators=50, max_depth=10, n_jobs=-1, random_state=42),
+        "XGBoost": XGBRegressor(n_estimators=50, max_depth=6, subsample=0.8, n_jobs=-1, random_state=42)
     }
 
     fitted_pipes = {}
 
-    # Train and evaluate
     for name, model in models.items():
         pipe = Pipeline([
             ("preprocessor", preprocessor),
@@ -42,6 +39,7 @@ def train_and_evaluate_claim_severity_models(df):
         print(f"✅ R²:   {r2:.4f}")
         print("-" * 40)
 
-        fitted_pipes[name] = pipe  # ✅ Save the fitted model pipeline
+        fitted_pipes[name] = pipe  # ✅ Save the model
 
     return fitted_pipes
+# Return the fitted pipelines for further use
